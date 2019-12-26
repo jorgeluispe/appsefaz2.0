@@ -1,0 +1,268 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:f="http://xmlns.jcp.org/jsf/core">
+    <body>
+        <ui:composition template="./../WEB-INF/restrito.xhtml">
+            <ui:define name="titulo">
+                Sistema
+            </ui:define>
+            <ui:define name="conteudo">
+                <h:form id="sistema">
+                    <p:focus for=":sistema:txt"/>
+                    <p:panel header="Gerenciar Usuarios" style="text-align: center">
+                        <p:panelGrid columns="6" styleClass="semBorda">
+                            <p:outputLabel value="Pesquisar por:" />
+                            <p:selectOneMenu style="margin: 0;padding: 0"
+                                             value="#{sistemaBean.colunaSelecionada}">
+                                <p:ajax event="change" update="@this"/>
+                                <f:selectItems value="#{sistemaBean.colunas}"
+                                               var="co"
+                                               itemValue="#{co}"
+                                               itemLabel="#{co}"/>
+                            </p:selectOneMenu>
+                            <p:inputText 
+                                value="#{sistemaBean.texto}"
+                                style="width:200px"
+                                maxlength="32"
+                                id="txt"
+                                placeholder="palavra chave">
+                                <p:ajax event="keyup"
+                                        update=":sistema:lista"
+                                        listener="#{sistemaBean.pesquisar()}"/>
+                            </p:inputText>
+                            <p:outputLabel value="Exportar:" />
+                            <p:selectOneMenu style="margin: 0;padding: 0"
+                                             value="#{sistemaBean.tipoExportacao}">
+                                <p:ajax event="change" update="@this"/>
+                                <f:selectItem itemValue="pdf" itemLabel="pdf"/>
+                            </p:selectOneMenu>
+                            <p:commandButton value="gerar"
+                                             ajax="false"   
+                                             onclick="form.target = '_blank'"
+                                             actionListener="#{sistemaBean.exportar()}"
+                                             update="@form"/>
+                        </p:panelGrid>
+
+                        <p:dataTable value="#{sistemaBean.sistemas}"
+                                     var="usu"
+                                     id="lista"
+                                     rowKey="#{usu.codSis}"
+                                     emptyMessage="nenhum sistema"
+                                     rows="10"
+                                     lazy="true"
+                                     paginator="true"
+                                     paginatorPosition="bottom"
+                                     scrollable="true"
+                                     scrollHeight="250"
+                                     selectionMode="single"
+                                     selection="#{sistemaBean.sistemaSelecionado}">
+                            <p:ajax event="rowSelect"
+                                    onstart="PF('statusDialog').show()" 
+                                    onsuccess="PF('statusDialog').hide();"
+                                    update=":sistema:opcoes"/>
+                            <p:column headerText="Codigo"
+                                      width="30">
+                                <h:outputText value="#{usu.codSis}"/>
+                            </p:column>
+
+                        </p:dataTable>
+                        <div align="center">
+                            <p:panelGrid columns="5" id='opcoes' styleClass="semBorda">
+                                <p:commandButton value="Novo (F6)"
+                                                 rendered="#{session.getAttribute('sistemaLogado').nivel ne 'USUARIO'}"
+                                                 actionListener="#{sistemaBean.inserir()}"
+                                                 update=":criar"
+                                                 onclick="PF('dlgcriar').show();"
+                                                 style="width: 100px"
+                                                 oncomplete="removerDesabilitados();"
+                                                 onstart="PF('statusDialog').show()" 
+                                                 onsuccess="PF('statusDialog').hide();"
+                                                 styleClass="criar"
+                                                 />
+
+                                <p:commandButton value="Editar (F7)"
+                                                 actionListener="#{sistemaBean.editar()}"
+                                                 update=":criar"
+                                                 onclick="PF('dlgcriar').show();"
+                                                 style="width: 100px"
+                                                 onstart="PF('statusDialog').show()" 
+                                                 onsuccess="PF('statusDialog').hide();"
+                                                 oncomplete="removerDesabilitados();"
+                                                 styleClass="editar"
+                                                 />
+
+                                <p:commandButton value="Deletar"
+                                                 actionListener="#{sistemaBean.excluir()}"
+                                                 update="@form"
+                                                 style="width: 100px"
+                                                 onstart="PF('statusDialog').show()" 
+                                                 onsuccess="PF('statusDialog').hide();"
+                                                 disabled="#{sistemaBean.sistemaSelecionado.codSis eq null}"
+                                                 >
+                                    <p:confirm header="Confirmação" message="Tem certeza?" icon="ui-icon-alert" />
+                                </p:commandButton>
+
+                                <p:commandButton value="Ver (F8)"
+                                                 actionListener="#{sistemaBean.ver()}"
+                                                 update=":criar"
+                                                 onclick="PF('dlgcriar').show();"
+                                                 style="width: 100px"
+                                                 onstart="PF('statusDialog').show()" 
+                                                 onsuccess="PF('statusDialog').hide();"
+                                                 oncomplete="removerDesabilitados();"
+                                                 styleClass="ver"
+                                                 disabled="#{sistemaBean.sistemaSelecionado.codSis eq null}"
+                                                 />
+
+                                <p:commandButton value="Revisoes (F9)"
+                                                 actionListener="#{sistemaBean.verRevisoes()}"
+                                                 update=":revisoes"
+                                                 onclick="PF('dlgrevisoes').show();"
+                                                 style="width: 100px"
+                                                 onstart="PF('statusDialog').show()" 
+                                                 onsuccess="PF('statusDialog').hide();"
+                                                 styleClass="revisoes"
+                                                 disabled="#{sistemaBean.sistemaSelecionado.codSis eq null}"
+                                                 />
+
+                            </p:panelGrid>
+                        </div>
+
+                    </p:panel>
+                </h:form>
+
+
+                <p:dialog
+                    modal="true"
+                    appendTo="@(body)"
+                    widgetVar="dlgcriar"
+                    width="500"
+                    height="450"
+                    resizable="false"
+                    closable="true"
+                    closeOnEscape="true"
+                    >
+
+                    <h:form id="criar">
+                        <p:focus context="@form"/>
+                        <p:messages closable="true" autoUpdate="true"/>
+                        <p:panelGrid columns="2" styleClass="semBorda">
+
+                            <p:outputLabel value="Codigo:" rendered="#{sistemaBean.sistema.codSis ne null}"/>
+                            <h:outputText value="#{sistemaBean.sistema.codSis}"  rendered="#{sistemaBean.sistema.codSis ne null}"/>
+
+                            <p:outputLabel value="Orgão:" for="sistema"/>
+                            <p:inputText value="#{sistemaBean.sistema.sistema}"
+                                         maxlength="32"
+                                         required="true"
+                                         id="sistema"
+                                         disabled="#{sistemaBean.ver}"
+                                         placeholder="sistema"
+                                         requiredMessage="preencha o campo sistema"/>
+
+
+                            <p:outputLabel value="Descrição:" for="descOrg"/>
+                            <p:inputText value="#{sistemaBean.sistema.descSis}"
+                                         maxlength="64"
+                                         size="40"
+                                         required="true"
+                                         id="email"
+                                         disabled="#{sistemaBean.ver}"
+                                         placeholder="descOrg"
+                                         requiredMessage="preencha o campo Descrição"
+                                         validatorMessage="descrição invalido">
+                            </p:inputText>
+
+                            <p:commandButton value="salvar"
+                                             action="#{sistemaBean.salvar()}"
+                                             immediate="true"
+                                             update="@form"
+                                             onstart="PF('statusDialog').show()" 
+                                             onsuccess="PF('statusDialog').hide();"
+                                             ajax="false"
+                                             style="width: 100px">
+                               <p:confirm header="Confirmação" message="Tem certeza?" icon="ui-icon-alert" /> 
+                            </p:commandButton>
+
+                            <p:commandButton value="cancelar"
+                                             update="@form"
+                                             rendered="#{sistemaBean.ver eq false}"
+                                             immediate="true"
+                                             oncomplete="PF('dlgcriar').hide();"
+                                             onstart="PF('statusDialog').show()" 
+                                             onsuccess="PF('statusDialog').hide();"
+                                             style="width: 100px">
+                                <p:confirm header="Confirmação" message="Tem certeza?" icon="ui-icon-alert" />
+                            </p:commandButton>
+
+                        </p:panelGrid>
+
+
+                    </h:form>
+
+                </p:dialog>
+
+                <p:dialog
+                    modal="true"
+                    header="Revisoes"
+                    appendTo="@(body)"
+                    widgetVar="dlgrevisoes"
+                    width="950"
+                    height="300"
+                    resizable="false"
+                    closable="true"
+                    closeOnEscape="true"
+                    >
+
+                    <h:form id="revisoes">
+
+
+                        <p:dataTable value="#{sistemaBean.revisoes}"
+                                     var="usur"
+                                     rows="10"
+                                     paginator="true"
+                                     paginatorPosition="bottom"
+                                     scrollable="true"
+                                     scrollHeight="200"                                     
+                                     >
+
+                            <p:column headerText="Codigo"
+                                      width="30">
+                                <h:outputText value="#{usur.codSis}"/>
+                            </p:column>
+
+                        </p:dataTable>
+
+                    </h:form>
+
+                </p:dialog>
+
+                <p:dialog  header="Enviar foto" 
+                           width="750"
+                           height="150" 
+                           widgetVar="dlgfoto"  
+                           resizable="false"
+                           modal="true"
+                           appendTo="@(body)"
+                           closable="true"
+                           draggable="false"
+                           closeOnEscape="true"
+                           > 
+
+                    <h:form id="foto" enctype="multipart/form-data">
+
+                    </h:form>
+
+                </p:dialog>
+
+
+            </ui:define>
+
+        </ui:composition>
+
+    </body>
+</html>

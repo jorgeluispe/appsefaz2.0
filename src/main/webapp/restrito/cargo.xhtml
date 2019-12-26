@@ -1,0 +1,268 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:f="http://xmlns.jcp.org/jsf/core">
+    <body>
+        <ui:composition template="./../WEB-INF/restrito.xhtml">
+            <ui:define name="titulo">
+                Usuarios
+            </ui:define>
+            <ui:define name="conteudo">
+                <h:form id="cargo">
+                    <p:focus for=":cargo:txt"/>
+                    <p:panel header="Gerenciar Usuarios" style="text-align: center">
+                        <p:panelGrid columns="6" styleClass="semBorda">
+                            <p:outputLabel value="Pesquisar por:" />
+                            <p:selectOneMenu style="margin: 0;padding: 0"
+                                             value="#{cargoBean.colunaSelecionada}">
+                                <p:ajax event="change" update="@this"/>
+                                <f:selectItems value="#{cargoBean.colunas}"
+                                               var="co"
+                                               itemValue="#{co}"
+                                               itemLabel="#{co}"/>
+                            </p:selectOneMenu>
+                            <p:inputText 
+                                value="#{cargoBean.texto}"
+                                style="width:200px"
+                                maxlength="32"
+                                id="txt"
+                                placeholder="palavra chave">
+                                <p:ajax event="keyup"
+                                        update=":cargo:lista"
+                                        listener="#{cargoBean.pesquisar()}"/>
+                            </p:inputText>
+                            <p:outputLabel value="Exportar:" />
+                            <p:selectOneMenu style="margin: 0;padding: 0"
+                                             value="#{cargoBean.tipoExportacao}">
+                                <p:ajax event="change" update="@this"/>
+                                <f:selectItem itemValue="pdf" itemLabel="pdf"/>
+                            </p:selectOneMenu>
+                            <p:commandButton value="gerar"
+                                             ajax="false"   
+                                             onclick="form.target = '_blank'"
+                                             actionListener="#{cargoBean.exportar()}"
+                                             update="@form"/>
+                        </p:panelGrid>
+
+                        <p:dataTable value="#{cargoBean.cargos}"
+                                     var="usu"
+                                     id="lista"
+                                     rowKey="#{usu.codCar}"
+                                     emptyMessage="nenhum cargo"
+                                     rows="10"
+                                     lazy="true"
+                                     paginator="true"
+                                     paginatorPosition="bottom"
+                                     scrollable="true"
+                                     scrollHeight="250"
+                                     selectionMode="single"
+                                     selection="#{cargoBean.cargoSelecionado}">
+                            <p:ajax event="rowSelect"
+                                    onstart="PF('statusDialog').show()" 
+                                    onsuccess="PF('statusDialog').hide();"
+                                    update=":cargo:opcoes"/>
+                            <p:column headerText="Codigo"
+                                      width="30">
+                                <h:outputText value="#{usu.codCar}"/>
+                            </p:column>
+
+                        </p:dataTable>
+                        <div align="center">
+                            <p:panelGrid columns="5" id='opcoes' styleClass="semBorda">
+                                <p:commandButton value="Novo (F6)"
+                                                 rendered="#{session.getAttribute('cargoLogado').nivel ne 'USUARIO'}"
+                                                 actionListener="#{cargoBean.inserir()}"
+                                                 update=":criar"
+                                                 onclick="PF('dlgcriar').show();"
+                                                 style="width: 100px"
+                                                 oncomplete="removerDesabilitados();"
+                                                 onstart="PF('statusDialog').show()" 
+                                                 onsuccess="PF('statusDialog').hide();"
+                                                 styleClass="criar"
+                                                 />
+
+                                <p:commandButton value="Editar (F7)"
+                                                 actionListener="#{cargoBean.editar()}"
+                                                 update=":criar"
+                                                 onclick="PF('dlgcriar').show();"
+                                                 style="width: 100px"
+                                                 onstart="PF('statusDialog').show()" 
+                                                 onsuccess="PF('statusDialog').hide();"
+                                                 oncomplete="removerDesabilitados();"
+                                                 styleClass="editar"
+                                                 />
+
+                                <p:commandButton value="Deletar"
+                                                 actionListener="#{cargoBean.excluir()}"
+                                                 update="@form"
+                                                 style="width: 100px"
+                                                 onstart="PF('statusDialog').show()" 
+                                                 onsuccess="PF('statusDialog').hide();"
+                                                 disabled="#{cargoBean.cargoSelecionado.codCar eq null}"
+                                                 >
+                                    <p:confirm header="Confirmação" message="Tem certeza?" icon="ui-icon-alert" />
+                                </p:commandButton>
+
+                                <p:commandButton value="Ver (F8)"
+                                                 actionListener="#{cargoBean.ver()}"
+                                                 update=":criar"
+                                                 onclick="PF('dlgcriar').show();"
+                                                 style="width: 100px"
+                                                 onstart="PF('statusDialog').show()" 
+                                                 onsuccess="PF('statusDialog').hide();"
+                                                 oncomplete="removerDesabilitados();"
+                                                 styleClass="ver"
+                                                 disabled="#{cargoBean.cargoSelecionado.codCar eq null}"
+                                                 />
+
+                                <p:commandButton value="Revisoes (F9)"
+                                                 actionListener="#{cargoBean.verRevisoes()}"
+                                                 update=":revisoes"
+                                                 onclick="PF('dlgrevisoes').show();"
+                                                 style="width: 100px"
+                                                 onstart="PF('statusDialog').show()" 
+                                                 onsuccess="PF('statusDialog').hide();"
+                                                 styleClass="revisoes"
+                                                 disabled="#{cargoBean.cargoSelecionado.codCar eq null}"
+                                                 />
+
+                            </p:panelGrid>
+                        </div>
+
+                    </p:panel>
+                </h:form>
+
+
+                <p:dialog
+                    modal="true"
+                    appendTo="@(body)"
+                    widgetVar="dlgcriar"
+                    width="500"
+                    height="450"
+                    resizable="false"
+                    closable="true"
+                    closeOnEscape="true"
+                    >
+
+                    <h:form id="criar">
+                        <p:focus context="@form"/>
+                        <p:messages closable="true" autoUpdate="true"/>
+                        <p:panelGrid columns="2" styleClass="semBorda">
+
+                            <p:outputLabel value="Codigo:" rendered="#{cargoBean.cargo.codCar ne null}"/>
+                            <h:outputText value="#{cargoBean.cargo.codCar}"  rendered="#{cargoBean.cargo.codCar ne null}"/>
+
+                            <p:outputLabel value="Orgão:" for="cargo"/>
+                            <p:inputText value="#{cargoBean.cargo.cargo}"
+                                         maxlength="32"
+                                         required="true"
+                                         id="cargo"
+                                         disabled="#{cargoBean.ver}"
+                                         placeholder="cargo"
+                                         requiredMessage="preencha o campo cargo"/>
+
+
+                            <p:outputLabel value="Descrição:" for="descOrg"/>
+                            <p:inputText value="#{cargoBean.cargo.descCar}"
+                                         maxlength="64"
+                                         size="40"
+                                         required="true"
+                                         id="email"
+                                         disabled="#{cargoBean.ver}"
+                                         placeholder="descOrg"
+                                         requiredMessage="preencha o campo Descrição"
+                                         validatorMessage="descrição invalido">
+                            </p:inputText>
+
+                            <p:commandButton value="salvar"
+                                             action="#{cargoBean.salvar()}"
+                                             immediate="true"
+                                             update="@form"
+                                             onstart="PF('statusDialog').show()" 
+                                             onsuccess="PF('statusDialog').hide();"
+                                             ajax="false"
+                                             style="width: 100px">
+                               <p:confirm header="Confirmação" message="Tem certeza?" icon="ui-icon-alert" /> 
+                            </p:commandButton>
+
+                            <p:commandButton value="cancelar"
+                                             update="@form"
+                                             rendered="#{cargoBean.ver eq false}"
+                                             immediate="true"
+                                             oncomplete="PF('dlgcriar').hide();"
+                                             onstart="PF('statusDialog').show()" 
+                                             onsuccess="PF('statusDialog').hide();"
+                                             style="width: 100px">
+                                <p:confirm header="Confirmação" message="Tem certeza?" icon="ui-icon-alert" />
+                            </p:commandButton>
+
+                        </p:panelGrid>
+
+
+                    </h:form>
+
+                </p:dialog>
+
+                <p:dialog
+                    modal="true"
+                    header="Revisoes"
+                    appendTo="@(body)"
+                    widgetVar="dlgrevisoes"
+                    width="950"
+                    height="300"
+                    resizable="false"
+                    closable="true"
+                    closeOnEscape="true"
+                    >
+
+                    <h:form id="revisoes">
+
+
+                        <p:dataTable value="#{cargoBean.revisoes}"
+                                     var="usur"
+                                     rows="10"
+                                     paginator="true"
+                                     paginatorPosition="bottom"
+                                     scrollable="true"
+                                     scrollHeight="200"                                     
+                                     >
+
+                            <p:column headerText="Codigo"
+                                      width="30">
+                                <h:outputText value="#{usur.codCar}"/>
+                            </p:column>
+
+                        </p:dataTable>
+
+                    </h:form>
+
+                </p:dialog>
+
+                <p:dialog  header="Enviar foto" 
+                           width="750"
+                           height="150" 
+                           widgetVar="dlgfoto"  
+                           resizable="false"
+                           modal="true"
+                           appendTo="@(body)"
+                           closable="true"
+                           draggable="false"
+                           closeOnEscape="true"
+                           > 
+
+                    <h:form id="foto" enctype="multipart/form-data">
+
+                    </h:form>
+
+                </p:dialog>
+
+
+            </ui:define>
+
+        </ui:composition>
+
+    </body>
+</html>
